@@ -1,0 +1,259 @@
+<html>
+    <head>
+    
+    <title>
+    Minesweeper
+    </title>
+
+
+        <script src="http://cdnjs.cloudflare.com/ajax/libs/jquery/1.11.0/jquery.min.js"> </script>
+
+        <script>
+            /*===============================================================================================================
+            | Function to generate and return a 2d array of numbers representing the game grid
+            | Args: 
+            |       - cols: Number of columns in the game grid
+            |       - rows: Number of rows in the game grid.
+            |================================================================================================================
+            */
+            function generateGridMatrix(cols, rows)
+            {
+                var b = new Array();
+                for (var i = 0; i != cols; i++)
+                {
+                    var tmp = new Array();
+                    for (var j = 0; j != rows; j++)
+                        tmp[j] = j;
+                    b[i] = tmp;
+                }
+                return b;
+            }
+
+
+            /*===============================================================================================================
+            | Function to generate Buttons from the game grid created above. 
+            | game grid is directly injected in markup
+            |================================================================================================================
+            */
+            function generateButtons(rows,cols)
+            {
+                var grid = generateGridMatrix(rows,cols);
+                var gridMarkup = "";
+                for (var i = 0; i != grid.length; i++)
+                {
+                    gridMarkup += "<tr>";
+
+                    for (var j = 0; j != grid[i].length; j++)
+                        gridMarkup += "<td id='btn_" + i + "_" + j + "'> <span class='lbl'></span><span class='flag'></span> </td>";
+
+                    gridMarkup += "</tr>";
+
+                }
+                $("#Minesweeper").html(gridMarkup);
+            }
+
+            /*===============================================================================================================
+            | Function to inject the "bomb" class in the grid at points containg mines (calculated randomly)
+            | List of bomb coordinates is also kept and returned.
+            |================================================================================================================
+            */
+            function placeMines(rows, cols)
+            {
+                var already = [];
+                var numCell = $('td').length;
+                numBomb = Math.ceil(numCell / 4);
+
+                for (var i = 1; i <= numBomb ; i++)
+                {
+                    var xcoord = Math.floor(Math.random() * (rows + 1));
+                    var ycoord = Math.floor(Math.random() * (cols + 1));
+                    if (already.indexOf(ycoord + "_" + xcoord) == -1)
+                    {
+                        $("#btn_" + ycoord + "_" + xcoord).addClass('bomb');
+                        already.push(ycoord + "_" + xcoord);
+                        console.log("pushing a mine on " + ycoord + "_" + xcoord);
+                        console.log(already);
+                    }
+                    else i--;
+                }
+
+                return already;
+            }
+
+
+            /*===============================================================================================================
+            | Function to Check and return the number of adjacent bombs given the coordinates of any given cell.
+            | Params:
+            |           - x : x coordinate of cell
+            |           - y : y coordinate of cell
+            |================================================================================================================
+            */
+            function checkAdjacentBombs(x, y)
+            {
+                var num = 0;
+                var adj = [];
+                adj[0] = [parseInt(x) + 1, parseInt(y)];
+                adj[1] = [parseInt(x) - 1, parseInt(y)];
+                adj[2] = [parseInt(x), parseInt(y) + 1];
+                adj[3] = [parseInt(x), parseInt(y) - 1];
+                adj[4] = [parseInt(x) - 1, parseInt(y) - 1];
+                adj[5] = [parseInt(x) + 1, parseInt(y) - 1];
+                adj[6] = [parseInt(x) - 1, parseInt(y) + 1];
+                adj[7] = [parseInt(x) + 1, parseInt(y) + 1];
+
+                for (var i = 0; i < adj.length; i++)
+                {
+                    if (isBomb(adj[i][0], adj[i][1])) num++
+                }
+
+                return num;
+            }
+
+            function isBomb(x, y)
+            {
+                var prefix = "#btn_";
+                var inst = prefix + y + "_" + x;
+                return $(inst).hasClass("bomb");
+
+            }
+
+            
+              
+            $(function(){
+                generateButtons(5,5);
+                placeMines(4, 4);
+
+         //       document.oncontextmenu = function () { return false; };
+
+                $('td').on("click", function (e) {
+                    console.log(e.button);
+                    if ($(this).hasClass('disabled')) return;
+                    $(this).find(".flag").attr("class", "flag");  // reset any icon class that was previously applied
+
+                    var ycoord = $(this).attr('id').split('_')[1];
+                    var xcoord = $(this).attr('id').split('_')[2];
+
+                    if (isBomb(xcoord, ycoord)) {
+                      //  $('.bomb .lbl').html("M");
+                        $("td").addClass("disabled");
+                        $('.bomb .lbl').css({ color: 'red' });
+                        $('.bomb').find('.lbl').addClass('entypo-alert');
+                    }
+                    else {
+                        var x = checkAdjacentBombs(xcoord, ycoord);
+                        $(this).find('.lbl').html(x);
+
+                        if ($("td").not(".disabled").not(".bomb").length == 1) alert("You win!");
+
+                    }
+
+                    $(this).addClass("disabled");
+                }).on("contextmenu", function ()
+                {
+                    if (!($(this).hasClass('disabled'))) $(this).find(".flag").addClass("entypo-cancel-squared");
+                    return false;
+                });
+            });
+
+
+
+        </script>
+
+        <link href='http://fonts.googleapis.com/css?family=Oleo+Script:400,700' rel='stylesheet' type='text/css'/>
+        <link href='http://weloveiconfonts.com/api/?family=entypo' rel='stylesheet' type='text/css'/>
+
+        <style>
+
+            body {
+                background: navy;
+            }
+
+            #Gameboard {
+                width: 45%;
+                margin: 15px auto;
+                padding:20px 0;
+                border: thin ridge solid rgba(255, 255, 255, 0.9);
+                border-radius: 20px;
+                background: rgba(255, 255, 255, 0.35);
+                 font-family: 'Oleo Script', cursive;
+                 color:white;
+                 font-weight:bold;
+            }
+
+            #Minesweeper {
+                margin:10px auto;
+                height: auto;
+            }
+
+                
+            #Minesweeper td {
+                color:white;
+                font-weight:bold;
+                font-size:25px;
+                box-sizing:border-box;
+                padding:50px;
+                margin:5px;
+                display:inline-block;
+                border: 1px black outset;    
+                position:relative;
+                background: rgb(181,189,200); /* Old browsers */
+                background: -moz-linear-gradient(top, rgba(181,189,200,1) 0%, rgba(130,140,149,1) 36%, rgba(40,52,59,1) 100%); /* FF3.6+ */
+                background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,rgba(181,189,200,1)), color-stop(36%,rgba(130,140,149,1)), color-stop(100%,rgba(40,52,59,1))); /* Chrome,Safari4+ */
+                background: -webkit-linear-gradient(top, rgba(181,189,200,1) 0%,rgba(130,140,149,1) 36%,rgba(40,52,59,1) 100%); /* Chrome10+,Safari5.1+ */
+                background: -o-linear-gradient(top, rgba(181,189,200,1) 0%,rgba(130,140,149,1) 36%,rgba(40,52,59,1) 100%); /* Opera 11.10+ */
+                background: -ms-linear-gradient(top, rgba(181,189,200,1) 0%,rgba(130,140,149,1) 36%,rgba(40,52,59,1) 100%); /* IE10+ */
+                background: linear-gradient(to bottom, rgba(181,189,200,1) 0%,rgba(130,140,149,1) 36%,rgba(40,52,59,1) 100%); /* W3C */
+                filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#b5bdc8', endColorstr='#28343b',GradientType=0 ); /* IE6-9 */
+            }
+
+            #Minesweeper td:hover {
+                border: 1px black inset;
+            }
+
+            #Minesweeper .disabled:hover {
+                border: 1px black outset;
+            }
+
+            .lbl,.flag {
+                position: absolute;
+                top:43%;
+                left:43%;
+            }
+
+            h1 {
+               
+                text-align:center;
+            }
+
+            
+
+            /* entypo */
+            [class*="entypo-"]:before {
+              font-family: 'entypo', sans-serif;
+              font-size:25px
+            }
+
+            .bomb .lbl[class*="entypo-"]:before {
+                color: red;
+            }
+
+            .flag[class*="entypo-"]:before {
+                color: yellow;
+            }
+
+
+
+        </style>
+ 
+    </head>
+    
+    <body>
+        <div id="Gameboard">
+            <h1>Minesweeper</h1>
+            <table id="Minesweeper">
+            </table>
+        </div>
+
+    </body>
+</html>
+
